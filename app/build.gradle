@@ -1,0 +1,38 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.3"
+
+    defaultConfig {
+        applicationId "com.vunke.chinaunicom.advertisement"
+        minSdkVersion 15
+        targetSdkVersion 25
+        versionCode 3
+        versionName "V1.2"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:25.3.1'
+    //OkGo  基础请求
+    compile 'com.lzy.net:okgo:+'
+    //OkGo 基于rx的请求
+    compile 'com.lzy.net:okrx:+'
+    //OkGo 下载管理和上传管理扩展，根据需要添加
+    compile 'com.lzy.net:okserver:+'
+    //gson
+    compile 'com.google.code.gson:gson:2.8.2'
+    //RX JAVA
+    compile 'io.reactivex:rxjava:+'
+    // RX Android
+    compile 'io.reactivex:rxandroid:+'
+}
