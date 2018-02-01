@@ -5,6 +5,7 @@ package com.vunke.chinaunicom.advertisement.manager;
  */
 public class URL_Manager {
     public static final String BASE_URL = "http://119.39.118.163:8082/";//正式地址
+//    public static final String BASE_URL = "http://119.39.118.162:8082/";//测试地址
 
 
 
@@ -22,5 +23,5 @@ public class URL_Manager {
     public static final String ADVERTISEMENT_GROUPSTRATEGY = "Advertise/GroupStrategy.do";//正式
 
 
-    public static final String ADVERTISEMENT_GROUPSTRATEGY2 = "GroupStrategy/GroupStrategy.txt";//测试
+//    public static final String ADVERTISEMENT_GROUPSTRATEGY2 = "GroupStrategy/GroupStrategy.txt";//测试
 }

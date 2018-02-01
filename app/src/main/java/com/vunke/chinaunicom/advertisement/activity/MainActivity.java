@@ -107,6 +107,9 @@ public class MainActivity extends BaseActivity {
         framelayout.setLayoutParams(framelayout_params);
         setContentView(framelayout);
     }
+
+
+
     /**
      * 初始化 webView
      */
@@ -186,7 +189,7 @@ public class MainActivity extends BaseActivity {
         float scanH = (float) sh / (float) 720;
         main_webView.setInitialScale((int) (scanW * 100));
         framelayout.addView(main_webView);
-        setContentView(framelayout);
+//        setContentView(framelayout);
 //        progressBar = new ProgressBar(mcontext);
 //        FrameLayout.LayoutParams frameParams = new FrameLayout.LayoutParams(
 //                FrameLayout.LayoutParams.WRAP_CONTENT,  FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER); // set size
@@ -327,7 +330,6 @@ public class MainActivity extends BaseActivity {
                         String s = response.body();
                         if (TextUtils.isEmpty(s)){
                             LogUtil.i(TAG, "onSuccess: get push data is null");
-                            hsPush = false;
                         }else{
                             LogUtil.i(TAG, "initPush onSuccess: s:"+s);
                             notifyBean = new Gson().fromJson(s,NotifyBean.class);
@@ -335,18 +337,15 @@ public class MainActivity extends BaseActivity {
                            if (notifyBean!=null&&!TextUtils.isEmpty( notifyBean.getCode())){
                               if ( notifyBean.getCode().equals("200")){
                                   LogUtil.i(TAG, "onSuccess: get code =200");
-                                  hsPush = true;
+                                     getPushData();
                               }else{
-                                  hsPush = false;
                                   LogUtil.i(TAG, "onSuccess: get code:"+notifyBean.getCode());
                               }
                            }else{
-                               hsPush = false;
                            }
                         }
                     }catch (Exception e){
                         e.printStackTrace();
-                        hsPush = false;
                     }
                 }
 
@@ -354,12 +353,10 @@ public class MainActivity extends BaseActivity {
                 public void onError(Response<String> response) {
                     super.onError(response);
                     LogUtil.i(TAG, "initPush onError: ");
-                    hsPush = false;
                 }
             });
         }catch (Exception e){
             e.printStackTrace();
-            hsPush = false;
         }
     }
     private void getVideo() {
@@ -371,7 +368,6 @@ public class MainActivity extends BaseActivity {
                List<String>  VideoList = FileManager.initVideoFile(mcontext);
                 if (VideoList!=null){
                     subscriber.onNext(VideoList);
-
                 }
                 subscriber.onCompleted();
             }
@@ -420,6 +416,18 @@ public class MainActivity extends BaseActivity {
         FrameLayout.LayoutParams cameraFL = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT); // set size
         videoview.setLayoutParams(cameraFL);
         framelayout.addView(videoview);
+        setTextView();
+    }
+    private void setTextView() {
+        TextView textView = new TextView(this);
+        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.LEFT);
+        layoutParams.setMargins(10, 10, 10, 0);
+        textView.setLayoutParams(layoutParams);
+        textView.setTextSize(DensityUtil.px2sp(mcontext, 40));
+        textView.setTextColor(Color.parseColor("#FF0000"));
+        textView.bringToFront();
+        textView.setText("解耦升级测试版");
+        framelayout.addView(textView);
     }
     private boolean hsPush = false;
     private void startEPG() {
@@ -522,10 +530,35 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        LogUtil.i(TAG, "Notify2Activity onResume: ");
+        LogUtil.i(TAG, "MainActivity onResume: ");
         if(startPlay){
             startPlay = false;
             return;
+        }
+    }
+
+    public void getPushData() {
+        LogUtil.i(TAG, "getPushData: ");
+        try{
+            if (notifyBean!=null){
+                if (TextUtils.isEmpty(notifyBean.getJson().getPush_url())){
+                    OkGo.<String>post(notifyBean.getJson().getPush_url()).tag(this).execute(new StringCallback() {
+                        @Override
+                        public void onSuccess(Response<String> response) {
+                            LogUtil.i(TAG, "onSuccess: get push Data success");
+                            hsPush = true;
+                        }
+
+                        @Override
+                        public void onError(Response<String> response) {
+                            super.onError(response);
+                            LogUtil.i(TAG, "onSuccess: get push Data failed");
+                        }
+                    });
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
         }
     }
 

@@ -279,7 +279,7 @@ public class VideoWindowSurfaceView extends SurfaceView implements SurfaceHolder
         LogUtil.i(TAG,"onPrepared isPlayPause:"+isPlayPause+"|"+currentP);
         // 播放视频
         if(isPlayFromStart){
-            mediaPlayer.seekTo(1);
+            mediaPlayer.seekTo(0);
             //马上置为false，因为视频开始播放以后，按home键切出去，再进来的话要从上次播放位置开始
             isPlayFromStart = false;
         }else{
@@ -289,7 +289,7 @@ public class VideoWindowSurfaceView extends SurfaceView implements SurfaceHolder
                 }
                 mediaPlayer.seekTo(currentP);
             }else{
-                mediaPlayer.seekTo(1);
+                mediaPlayer.seekTo(0);
             }
         }
         LogUtil.i(TAG,"onPrepared start ..");
