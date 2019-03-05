@@ -59,6 +59,7 @@
             android:screenOrientation="landscape"
             android:windowSoftInputMode="stateVisible|adjustPan|stateHidden"></activity>
 
+
         <receiver android:name=".receiver.ConnectionChangeReceiver">
             <intent-filter>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />

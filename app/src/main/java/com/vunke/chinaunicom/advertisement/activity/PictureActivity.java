@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.TextUtils;
+import android.util.Log;
 import android.widget.ImageView;
 
 import com.google.gson.Gson;
@@ -15,14 +16,17 @@ import com.lzy.okgo.model.Response;
 import com.lzy.okgo.request.PostRequest;
 import com.vunke.chinaunicom.advertisement.R;
 import com.vunke.chinaunicom.advertisement.base.BaseActivity;
-import com.vunke.chinaunicom.advertisement.utils.GroupStategyUtils;
+import com.vunke.chinaunicom.advertisement.callback.AdvertCallBack;
 import com.vunke.chinaunicom.advertisement.log.LogUtil;
+import com.vunke.chinaunicom.advertisement.manager.AdvertManage;
 import com.vunke.chinaunicom.advertisement.manager.DevicesManager;
 import com.vunke.chinaunicom.advertisement.manager.DownloadManager;
 import com.vunke.chinaunicom.advertisement.manager.FileManager;
 import com.vunke.chinaunicom.advertisement.manager.URL_Manager;
 import com.vunke.chinaunicom.advertisement.modle.DeviceInfoBean;
 import com.vunke.chinaunicom.advertisement.modle.NotifyBean;
+import com.vunke.chinaunicom.advertisement.modle.UpdateDataBean;
+import com.vunke.chinaunicom.advertisement.utils.GroupStategyUtils;
 import com.vunke.chinaunicom.advertisement.utils.SharedPreferencesUtil;
 import com.vunke.chinaunicom.advertisement.utils.Utils;
 
@@ -47,6 +51,18 @@ public class PictureActivity extends BaseActivity {
         deviceInfoBean = new DeviceInfoBean();
         DevicesManager.queryDevicesInfo(mcontext,deviceInfoBean);
         LogUtil.i(TAG, "initDeviceInfo: deviiceInfoBean:"+deviceInfoBean.toString());
+        JSONObject json = AdvertManage.setRequestParams(mcontext, deviceInfoBean);
+        AdvertManage.GetAdvertData(mcontext, json, new AdvertCallBack() {
+            @Override
+            public void onSuccess(UpdateDataBean updateDataBean) {
+                Log.i(TAG, "getPicture onSuccess:  ");
+            }
+
+            @Override
+            public void onError() {
+                Log.i(TAG, "getPicture onError: ");
+            }
+        });
     }
     private NotifyBean notifyBean;
     public void initPush(){

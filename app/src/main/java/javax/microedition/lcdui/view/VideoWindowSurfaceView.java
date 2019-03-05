@@ -11,7 +11,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import com.vunke.chinaunicom.advertisement.activity.MainActivity;
 import com.vunke.chinaunicom.advertisement.log.LogUtil;
 
 
@@ -150,9 +149,11 @@ public class VideoWindowSurfaceView extends SurfaceView implements SurfaceHolder
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
+        LogUtil.i(TAG, "surfaceDestroyed: ");
         close();
     }
     public void close(){
+        LogUtil.i(TAG, "close: ");
         if (null != mediaPlayer) {
             currentP = mediaPlayer.getCurrentPosition();
             mediaPlayer.stop();
@@ -293,15 +294,13 @@ public class VideoWindowSurfaceView extends SurfaceView implements SurfaceHolder
             }
         }
         LogUtil.i(TAG,"onPrepared start ..");
-
         mediaPlayer.start();
-
         // 设置显示到屏幕
         mediaPlayer.setDisplay(handleVedio);
         // 设置surfaceView保持在屏幕上
         mediaPlayer.setScreenOnWhilePlaying(true);
         handleVedio.setKeepScreenOn(true);
-        MainActivity.removLoadingView();
+//        MainActivity.removLoadingView();
         LogUtil.i(TAG,"onPrepared end");
     }
 }

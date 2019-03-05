@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.os.CountDownTimer;
 import android.os.IBinder;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.google.gson.Gson;
 import com.lzy.okgo.OkGo;
@@ -104,17 +103,17 @@ public class GroupStrategyService extends Service {
                                      LogUtil.i(TAG, "initGroupStrategy onSuccess: get code =200");
                                      setGroupInfoData(groupInfoBean);
                                  }else{
-                                     Log.i(TAG, "initGroupStrategy onSuccess: getcode:"+groupInfoBean.getCode());
+                                     LogUtil.i(TAG, "initGroupStrategy onSuccess: getcode:"+groupInfoBean.getCode());
                                  }
                             }else{
-                                Log.i(TAG, "initGroupStrategy onSuccess: get groupInfo is null or getcode is null");
+                                LogUtil.i(TAG, "initGroupStrategy onSuccess: get groupInfo is null or getcode is null");
                             }
                         }else{
-                            Log.i(TAG, "initGroupStrategy onSuccess: get groupInfo is null ");
+                            LogUtil.i(TAG, "initGroupStrategy onSuccess: get groupInfo is null ");
                         }
                     }catch (Exception e){
                         e.printStackTrace();
-                        Log.i(TAG, "initGroupStrategy onSuccess: request failed or get gson from json failed");
+                        LogUtil.i(TAG, "initGroupStrategy onSuccess: request failed or get gson from json failed");
                     }
                 }
 

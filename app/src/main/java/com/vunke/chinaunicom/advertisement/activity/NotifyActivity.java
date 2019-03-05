@@ -3,16 +3,20 @@ package com.vunke.chinaunicom.advertisement.activity;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.JavascriptInterface;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 import com.vunke.chinaunicom.advertisement.R;
 import com.vunke.chinaunicom.advertisement.base.BaseActivity;
@@ -22,10 +26,12 @@ import com.vunke.chinaunicom.advertisement.manager.DevicesManager;
 import com.vunke.chinaunicom.advertisement.modle.DeviceInfoBean;
 import com.vunke.chinaunicom.advertisement.utils.GroupStategyUtils;
 
+import org.json.JSONObject;
+
 public class NotifyActivity extends BaseActivity {
     private static final String TAG = "NotifyActivity";
     private WebView notfy_webView;
-    private LinearLayout notify_layout;
+    private RelativeLayout notify_layout;
     private long endtime;
     private long starttime;
     private long timestamp;
@@ -51,6 +57,7 @@ public class NotifyActivity extends BaseActivity {
         Intent intent = getIntent();
         if (intent.hasExtra("path")){
             path = intent.getStringExtra("path");
+            initCountDownTimer(10);
         }
         if (TextUtils.isEmpty(path)){
             startEPG();
@@ -67,7 +74,7 @@ public class NotifyActivity extends BaseActivity {
      */
     @SuppressLint({ "JavascriptInterface", "SetJavaScriptEnabled" })
     private void initView() {
-        notify_layout = (LinearLayout) findViewById(R.id.notify_layout);
+        notify_layout = (RelativeLayout) findViewById(R.id.notify_layout);
         notfy_webView = (WebView) findViewById(R.id.notfy_webView);
         WebUtils.SetWebView(notfy_webView,mcontext);
 
@@ -85,15 +92,18 @@ public class NotifyActivity extends BaseActivity {
                 super.onPageFinished(view, url);
                 LogUtil.i(TAG, "网页加载结束");
                 new Handler().postDelayed(new Runnable() {
-
                     @Override
                     public void run() {
                         notfy_webView.setVisibility(View.VISIBLE);
+                        notfy_webView.requestFocus();
                     }
                 }, 200);
+
             }
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
+//                Toast.makeText(mcontext, url, Toast.LENGTH_SHORT).show();
+                Log.i(TAG, "shouldOverrideUrlLoading: url:"+url);
                 view.loadUrl(url);//在2.3上面不加这句话，可以加载出页面，在4.0上面必须要加入，不然出现白屏
                 return true;
             }
@@ -121,13 +131,45 @@ public class NotifyActivity extends BaseActivity {
                 }
             }
         });
-
-        String pasams = "userName="+deviceInfoBean.getUsername();
-        notfy_webView.postUrl(path, pasams.getBytes());
+        try {
+            String postData = "userName=" + deviceInfoBean.getUsername()+"&userToken="+deviceInfoBean.getUser_token()+"&stb_id="+deviceInfoBean.getStb_id();
+//            notfy_webView.postUrl(path,postData.getBytes());
+            notfy_webView.loadUrl(path+postData);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
+    private CountDownTimer countDownTimer;
+    private void cancelCountDownTimer() {
+        try {
+            if (countDownTimer != null) {
+                countDownTimer.cancel();
+                countDownTimer = null;
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    private void initCountDownTimer(int closeTime) {
+        LogUtil.i(TAG, "initCountDownTimer: ");
+        cancelCountDownTimer();
+        if (closeTime<=0){
+            closeTime = 10;
+        }
+        countDownTimer = new CountDownTimer(closeTime * 1000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                LogUtil.i(TAG, "onTick: CountDown" + millisUntilFinished / 1000);
+            }
 
-
+            @Override
+            public void onFinish() {
+                LogUtil.i(TAG, "CountDownTimer1 onFinish: ");
+                startEPG();
+            }
+        }.start();
+    }
     /**
      * 安卓与JS交互
      *
@@ -146,6 +188,19 @@ public class NotifyActivity extends BaseActivity {
                 LogUtil.i(TAG, "用户正在操作");
             }
         }
+        @JavascriptInterface
+        public void initWebTime(String json){
+            try {
+                JSONObject jsonData = new JSONObject(json);
+                if (jsonData.has("initWebTime")){
+                    int time = jsonData.getInt("initWebTime");
+                    cancelCountDownTimer();
+                    initCountDownTimer(time);
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }
     }
     private void startEPG() {
         LogUtil.i(TAG, "startEPG: ");
@@ -160,6 +215,7 @@ public class NotifyActivity extends BaseActivity {
 			return true;
 		}*/
         if ((keyCode == KeyEvent.KEYCODE_BACK) && notfy_webView.canGoBack()) {//尚未测试
+            goBack();
             if (notfy_webView.getUrl().contains(path)) {
                 startEPG();
                 return false;
@@ -168,6 +224,7 @@ public class NotifyActivity extends BaseActivity {
                 return true;
             }
         }else if ((keyCode == KeyEvent.KEYCODE_BACK)) {// && notfy_webView.canGoBack()
+            goBack();
             startEPG();
             // notfy_webView.goBack(); // goBack()表示返回WebView的上一页面
             return true;
@@ -183,5 +240,18 @@ public class NotifyActivity extends BaseActivity {
     protected void onDestroy() {
         super.onDestroy();
         LogUtil.i(TAG,"NotifyActivity onDestory");
+        cancelCountDownTimer();
+    }
+    public void goBack(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            notfy_webView.evaluateJavascript("javascript:goBack()", new ValueCallback<String>() {
+                @Override
+                public void onReceiveValue(String value) {
+                    //此处为 js 返回的结果
+                }
+            });
+        }else{
+            notfy_webView.loadUrl("javascript:goBack()");
+        }
     }
 }

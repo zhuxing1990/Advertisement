@@ -8,15 +8,29 @@ android {
         applicationId "com.vunke.chinaunicom.advertisement"
         minSdkVersion 15
         targetSdkVersion 25
-        versionCode 3
-        versionName "V1.2"
+        versionCode 8
+        versionName "V1.6"
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            applicationVariants.all { variant ->
+                variant.outputs.each { output ->
+                    if (variant.buildType.name.equals('release')) {
+                        output.outputFile = new File(output.outputFile.parent, "Advertisement_" +
+                                defaultConfig.versionCode+"_"+defaultConfig.versionName+releaseTime() + ".apk" );
+                    } else if (variant.buildType.name.equals('debug')) {
+                        output.outputFile = new File(output.outputFile.parent, "Advertisement_" +
+                                defaultConfig.versionCode+"_"+defaultConfig.versionName+releaseTime() + "_debug.apk" );
+                    }
+                }
+            }
         }
     }
+}
+def releaseTime() {
+    return new Date().format("yyMMdd", TimeZone.getTimeZone("UTC"))
 }
 
 dependencies {
@@ -35,4 +49,5 @@ dependencies {
     compile 'io.reactivex:rxjava:+'
     // RX Android
     compile 'io.reactivex:rxandroid:+'
+    compile 'com.liulishuo.magicprogresswidget:library:1.1.1'
 }

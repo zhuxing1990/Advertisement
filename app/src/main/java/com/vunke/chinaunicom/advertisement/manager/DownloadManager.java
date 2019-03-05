@@ -151,6 +151,7 @@ public class DownloadManager {
                             FileManager.copyDirectiory(LOCAL_HTTP_VIDEO_PATH, LOCAL_SAVE_VIDEO_PATH);
                             LogUtil.i(TAG, "copyFile OK fileName:"+file.getName());
                             SharedPreferencesUtil.setStringValue(context, KEY_FOR_VIDEO_DOWNLOAD_TIME, updateDataBean.getJson().getUpdateTime());
+                            file.deleteOnExit();
                         }catch (Exception e){
                             e.printStackTrace();
                         }

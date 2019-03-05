@@ -10,6 +10,10 @@ import com.vunke.chinaunicom.advertisement.log.LogcatHelper;
 import com.vunke.chinaunicom.advertisement.service.GroupStrategyService;
 import com.vunke.chinaunicom.advertisement.utils.Utils;
 
+import java.util.concurrent.TimeUnit;
+
+import okhttp3.OkHttpClient;
+
 /**
  * Created by zhuxi on 2017/12/26.
  */
@@ -24,13 +28,15 @@ public class BaseApplication extends Application {
         LogcatHelper.getInstance(this).start();
         HttpHeaders headers = new HttpHeaders();
         headers.put("Connection","close");
-        OkGo.getInstance().init(this).addCommonHeaders(headers).setRetryCount(1);
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+//        //全局的读取超时时间
+//        builder.readTimeout(5000, TimeUnit.MILLISECONDS);
+//        //全局的写入超时时间
+//        builder.writeTimeout(5000, TimeUnit.MILLISECONDS);
+        //全局的连接超时时间
+        builder.connectTimeout(5000, TimeUnit.MILLISECONDS);
+        OkGo.getInstance().init(this).addCommonHeaders(headers).setRetryCount(1).setOkHttpClient( builder.build());
         initGroupStrategy();
-//        try {
-//            Utils.StartServer("com.vunke.appmanage","com.vunke.appmanage.IUService",null,this);
-//        }catch (Exception e){
-//            e.printStackTrace();
-//        }
     }
     private void initGroupStrategy() {
         LogUtil.i(TAG, "initGroupStrategy: ");
