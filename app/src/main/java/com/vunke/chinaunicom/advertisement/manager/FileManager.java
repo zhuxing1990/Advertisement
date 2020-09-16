@@ -33,7 +33,7 @@ public class FileManager {
         List<String> fileList = null;//= new ArrayList<String>();
         try {
 //            String imagePath = mcontext.getFilesDir().getAbsolutePath() + DownloadManager.ADVERT_READ_IMAGE_PATH;
-            String videoPath = context.getFilesDir().getAbsolutePath() + DownloadManager.ADVERT_READ_VIDEO_PATH;
+            String videoPath = DownloadManager.DEFAULT_DOWNLOAD_PATH + DownloadManager.ADVERT_READ_VIDEO_PATH;
             File file = new File(videoPath);
             if (file.exists()) {
                 LogUtil.i(TAG, "initVideoFile: getVideo exists");
@@ -135,6 +135,9 @@ public class FileManager {
     }
 
     public static void localFileDelete(File file) {
+        if (!file.exists()){
+            return;
+        }
         if (file.isFile()) {
             file.delete();
             return;
@@ -180,7 +183,6 @@ public class FileManager {
             }
         }
     }
-
     public static void copyFile(File sourceFile, File targetFile)
             throws IOException {
         // 新建文件输入流并对它进行缓冲
@@ -208,11 +210,12 @@ public class FileManager {
     }
 
 
+
     public static List<String> initImageFile(Context context) {
         LogUtil.i(TAG, "initVideoFile: ");
         List<String> fileList = null;
         try {
-            String imagePath = context.getFilesDir().getAbsolutePath() + DownloadManager.ADVERT_READ_IMAGE_PATH;
+            String imagePath = DownloadManager.DEFAULT_DOWNLOAD_PATH + DownloadManager.ADVERT_READ_IMAGE_PATH;
             File file = new File(imagePath);
             if (file.exists()) {
                 LogUtil.i(TAG, "initImageFile: get image exists");
@@ -234,10 +237,10 @@ public class FileManager {
                 }
             }else{
                 LogUtil.i(TAG, "initImageFile: get Image not exists");
-                File video = new File(context.getFilesDir().getAbsolutePath()+DownloadManager.ADVERT_BASE_IMAGE_PATH);
+                File video = new File(DownloadManager.DEFAULT_DOWNLOAD_PATH+DownloadManager.ADVERT_BASE_IMAGE_PATH);
                 if (!video.exists()){
                     video.mkdirs();
-                    File videoFile = new File(context.getFilesDir().getAbsolutePath()+DownloadManager.ADVERT_BASE_IMAGE_PATH+File.separator+"main_backage.png");
+                    File videoFile = new File(DownloadManager.DEFAULT_DOWNLOAD_PATH+DownloadManager.ADVERT_BASE_IMAGE_PATH+File.separator+"main_backage.png");
                     videoFile.createNewFile();
                     FileOutputStream fos = new FileOutputStream(videoFile);
                     LogUtil.i(TAG, "initImageFile: get base video file failed,create file");

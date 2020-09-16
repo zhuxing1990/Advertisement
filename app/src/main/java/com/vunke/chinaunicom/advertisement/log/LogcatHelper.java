@@ -99,7 +99,11 @@ public class LogcatHelper {
   
         public LogDumper(String pid, String dir) {
             mPID = pid;  
-            try {  
+            try {
+                File file = new File(PATH_LOGCAT);
+                if (!file.exists()) {
+                    file.mkdirs();
+                }
                 out = new FileOutputStream(new File(dir, fileName
                         +getFileName()+ ".log"));
             } catch (FileNotFoundException e) {

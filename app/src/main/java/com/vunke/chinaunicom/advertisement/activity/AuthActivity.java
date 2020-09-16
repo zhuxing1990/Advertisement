@@ -3,7 +3,6 @@ package com.vunke.chinaunicom.advertisement.activity;
 import android.os.Bundle;
 import android.os.Process;
 import android.text.TextUtils;
-import android.util.Log;
 import android.widget.TextView;
 
 import com.vunke.chinaunicom.advertisement.R;
@@ -31,7 +30,7 @@ public class AuthActivity extends BaseActivity {
     private void initAuth() {
         DeviceInfoBean deviceInfoBean = new DeviceInfoBean();
         DevicesManager.queryDevicesInfo(mcontext,deviceInfoBean);
-        Log.i(TAG, "initAuth: deviceInfoBean:"+deviceInfoBean.toString());
+        LogUtil.i(TAG, "initAuth: deviceInfoBean:"+deviceInfoBean.toString());
         if (!TextUtils.isEmpty(deviceInfoBean.getLoginstatus())){
              switch (deviceInfoBean.getLoginstatus()){
                  case "ok":

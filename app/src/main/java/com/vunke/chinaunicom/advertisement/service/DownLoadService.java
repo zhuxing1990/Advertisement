@@ -74,8 +74,14 @@ public class DownLoadService extends Service {
 						try {
 							UpdateDataBean updateDataBean = new Gson().fromJson(s, UpdateDataBean.class);
 							if (updateDataBean!=null){
-								DownloadManager downloadManager = new DownloadManager(getApplicationContext());
-								downloadManager.GetUpdateData(getApplicationContext(),updateDataBean);
+								int templateTYPE = updateDataBean.getJson().getTemplateTYPE();
+								LogUtil.i(TAG, "GetUpdateData: templateTYPE:"+templateTYPE);
+								if (templateTYPE!=10){
+									DownloadManager downloadManager = new DownloadManager(getApplicationContext());
+									downloadManager.GetUpdateData(getApplicationContext(),updateDataBean);
+								}else{
+									LogUtil.i(TAG, "GetUpdateData: get templateTYPE is 10 ,don't download");
+								}
 							}else{
 								LogUtil.i(TAG, "GetUpdateData: get data is null,update over");
 							}

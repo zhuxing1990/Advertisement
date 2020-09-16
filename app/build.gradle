@@ -8,8 +8,8 @@ android {
         applicationId "com.vunke.chinaunicom.advertisement"
         minSdkVersion 15
         targetSdkVersion 25
-        versionCode 8
-        versionName "V1.6"
+        versionCode 15
+        versionName "V5.0"
     }
     buildTypes {
         release {

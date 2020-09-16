@@ -6,9 +6,7 @@ import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.os.Handler;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.JavascriptInterface;
@@ -22,11 +20,19 @@ import com.vunke.chinaunicom.advertisement.R;
 import com.vunke.chinaunicom.advertisement.base.BaseActivity;
 import com.vunke.chinaunicom.advertisement.listener.WebUtils;
 import com.vunke.chinaunicom.advertisement.log.LogUtil;
+import com.vunke.chinaunicom.advertisement.manager.AdvertManage;
 import com.vunke.chinaunicom.advertisement.manager.DevicesManager;
 import com.vunke.chinaunicom.advertisement.modle.DeviceInfoBean;
 import com.vunke.chinaunicom.advertisement.utils.GroupStategyUtils;
 
 import org.json.JSONObject;
+
+import java.util.concurrent.TimeUnit;
+
+import rx.Observable;
+import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 
 public class NotifyActivity extends BaseActivity {
     private static final String TAG = "NotifyActivity";
@@ -84,26 +90,41 @@ public class NotifyActivity extends BaseActivity {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
-                LogUtil.i(TAG, "网页加载中");
+                LogUtil.i(TAG, "网页加载中:"+url);
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                LogUtil.i(TAG, "网页加载结束");
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        notfy_webView.setVisibility(View.VISIBLE);
-                        notfy_webView.requestFocus();
-                    }
-                }, 200);
+                LogUtil.i(TAG, "网页加载结束:"+url);
+                Observable.interval(200, TimeUnit.MILLISECONDS).subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(new Subscriber<Long>() {
+                            @Override
+                            public void onCompleted() {
+                                unsubscribe();
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+                                notfy_webView.setVisibility(View.VISIBLE);
+                                notfy_webView.requestFocus();
+                                unsubscribe();
+                            }
+
+                            @Override
+                            public void onNext(Long aLong) {
+                                onCompleted();
+                                notfy_webView.setVisibility(View.VISIBLE);
+                                notfy_webView.requestFocus();
+                            }
+                        });
 
             }
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
 //                Toast.makeText(mcontext, url, Toast.LENGTH_SHORT).show();
-                Log.i(TAG, "shouldOverrideUrlLoading: url:"+url);
+                LogUtil.i(TAG, "shouldOverrideUrlLoading: url:"+url);
                 view.loadUrl(url);//在2.3上面不加这句话，可以加载出页面，在4.0上面必须要加入，不然出现白屏
                 return true;
             }
@@ -134,7 +155,18 @@ public class NotifyActivity extends BaseActivity {
         try {
             String postData = "userName=" + deviceInfoBean.getUsername()+"&userToken="+deviceInfoBean.getUser_token()+"&stb_id="+deviceInfoBean.getStb_id();
 //            notfy_webView.postUrl(path,postData.getBytes());
-            notfy_webView.loadUrl(path+postData);
+            if (path.contains("?")){
+                if (path.endsWith("&")){
+                    path+=postData;
+                }else{
+                    path+="&"+postData;
+                }
+            }else{
+                path+="?"+postData;
+            }
+            LogUtil.i(TAG, "initView: "+path);
+            notfy_webView.loadUrl(path);
+            AdvertManage.uploadAdverLog(deviceInfoBean,mcontext,path);
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -160,7 +192,7 @@ public class NotifyActivity extends BaseActivity {
         countDownTimer = new CountDownTimer(closeTime * 1000, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
-                LogUtil.i(TAG, "onTick: CountDown" + millisUntilFinished / 1000);
+                LogUtil.i(TAG, "onTick: CountDown:" + millisUntilFinished / 1000);
             }
 
             @Override

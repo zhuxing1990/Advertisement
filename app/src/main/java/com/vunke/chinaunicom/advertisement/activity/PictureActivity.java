@@ -6,7 +6,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.TextUtils;
-import android.util.Log;
 import android.widget.ImageView;
 
 import com.google.gson.Gson;
@@ -55,12 +54,12 @@ public class PictureActivity extends BaseActivity {
         AdvertManage.GetAdvertData(mcontext, json, new AdvertCallBack() {
             @Override
             public void onSuccess(UpdateDataBean updateDataBean) {
-                Log.i(TAG, "getPicture onSuccess:  ");
+                LogUtil.i(TAG, "getPicture onSuccess:  ");
             }
 
             @Override
             public void onError() {
-                Log.i(TAG, "getPicture onError: ");
+                LogUtil.i(TAG, "getPicture onError: ");
             }
         });
     }
@@ -89,7 +88,9 @@ public class PictureActivity extends BaseActivity {
                             if (notifyBean!=null&&!TextUtils.isEmpty( notifyBean.getCode())){
                                 if ( notifyBean.getCode().equals("200")){
                                     LogUtil.i(TAG, "onSuccess: get code =200");
-                                    hsPush = true;
+                                    if (null!=notifyBean.getJson()&&!TextUtils.isEmpty(notifyBean.getJson().getPush_url())){
+                                        hsPush = true;
+                                    }
                                 }else{
                                     hsPush = false;
                                     LogUtil.i(TAG, "onSuccess: get code:"+notifyBean.getCode());
@@ -129,7 +130,7 @@ public class PictureActivity extends BaseActivity {
     private int imagePlayTime = 5;
     private void initAnimationDrawable() {
         animationDrawable = new AnimationDrawable();
-        List<Drawable> picsPath = FileManager.getpicsPath(DownloadManager.ADVERT_READ_IMAGE_PATH, getResources());
+        List<Drawable> picsPath = FileManager.getpicsPath(DownloadManager.DEFAULT_DOWNLOAD_PATH +DownloadManager.ADVERT_READ_IMAGE_PATH, getResources());
         if (picsPath != null && picsPath.size() > 0) {
             for (int i = 0; i < picsPath.size(); i++) {
                 animationDrawable.addFrame(picsPath.get(i), imagePlayTime*1000);

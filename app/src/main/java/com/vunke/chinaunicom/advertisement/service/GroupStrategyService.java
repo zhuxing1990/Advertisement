@@ -12,12 +12,12 @@ import com.lzy.okgo.callback.StringCallback;
 import com.lzy.okgo.model.Response;
 import com.lzy.okgo.request.PostRequest;
 import com.vunke.chinaunicom.advertisement.log.LogUtil;
+import com.vunke.chinaunicom.advertisement.manager.AdvertManage;
 import com.vunke.chinaunicom.advertisement.manager.DevicesManager;
 import com.vunke.chinaunicom.advertisement.manager.URL_Manager;
 import com.vunke.chinaunicom.advertisement.modle.DeviceInfoBean;
 import com.vunke.chinaunicom.advertisement.modle.GroupInfoBean;
 import com.vunke.chinaunicom.advertisement.utils.GroupStategyUtils;
-import com.vunke.chinaunicom.advertisement.utils.Utils;
 
 import org.json.JSONObject;
 
@@ -79,14 +79,17 @@ public class GroupStrategyService extends Service {
     private void initGroupStrategy() {
         LogUtil.i(TAG, "initGroupStrategy: ");
         try {
-            JSONObject json = new JSONObject();
-            json.put("userName",deviceInfoBean.getUsername());
-            json.put("version_code" , Utils.getVersionCode(getApplicationContext()));
-            json.put("version_name" ,  Utils.getVersionName(getApplicationContext()));
-            json.put("EPGDomain" ,  deviceInfoBean.getEPGDomain());
-            json.put("EPGGroupNMB" ,  deviceInfoBean.getEPGGroupNMB());
-            json.put("Area_id" ,  deviceInfoBean.getArea_id());
-            json.put("Group_id" ,  deviceInfoBean.getGroup_id());
+//            JSONObject json = new JSONObject();
+//            json.put("userName",deviceInfoBean.getUsername())
+//                .put("version_code" , Utils.getVersionCode(getApplicationContext()))
+//                .put("version_name" ,  Utils.getVersionName(getApplicationContext()))
+//                .put("stbModle", Build.MODEL)
+//                .put("EPGDomain" ,  deviceInfoBean.getEPGDomain())
+//                .put("EPGGroupNMB" ,  deviceInfoBean.getEPGGroupNMB())
+//                .put("Area_id" ,  deviceInfoBean.getArea_id())
+//                .put("Group_id" ,  deviceInfoBean.getGroup_id())
+//                .put("stb_id",deviceInfoBean.getStb_id());
+            JSONObject json = AdvertManage.setRequestParams(getApplicationContext(), deviceInfoBean);
             LogUtil.i(TAG, "initGroupStrategy: json="+json.toString());
             PostRequest<String> postRequest = OkGo.<String>post(URL_Manager.BASE_URL + URL_Manager.ADVERTISEMENT_GROUPSTRATEGY).tag(this);
             postRequest.params("json",json.toString());
@@ -120,7 +123,7 @@ public class GroupStrategyService extends Service {
                 @Override
                 public void onError(Response<String> response) {
                     super.onError(response);
-                    LogUtil.i(TAG, "onError: ");
+                    LogUtil.i(TAG, "initGroupStrategy onError: request Error");
                 }
 
                 @Override

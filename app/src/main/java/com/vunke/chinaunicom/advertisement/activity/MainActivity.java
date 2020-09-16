@@ -10,7 +10,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.os.Handler;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
@@ -50,6 +49,7 @@ import com.vunke.chinaunicom.advertisement.utils.Utils;
 import org.json.JSONObject;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import rx.Observable;
 import rx.Subscriber;
@@ -62,12 +62,14 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
     private WebView main_webView;
     public static int sw = 1280;
     public static int sh = 720;
-
+    private boolean isOnCreate = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        isOnCreate = true;
         boolean isPicture = SharedPreferencesUtil.getBooleanValue(mcontext, "isPicture", false);
+        LogUtil.i(TAG, "onCreate: isPicture:"+isPicture);
         if (isPicture) {
             Utils.startPictureActivity(mcontext);
             return;
@@ -78,7 +80,11 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
         initWebView();
         initCountDownTimer();
         initAdvert();
-        getVideo();
+        boolean isVideoStream = SharedPreferencesUtil.getBooleanValue(mcontext,"isVideoStream",false);
+        LogUtil.i(TAG, "onCreate: isVideoStream:"+isVideoStream);
+        if (!isVideoStream){
+            getVideo();
+        }
         initPush();
 //        showToast("当前版本:"+Utils.getVersionName(mcontext));
     }
@@ -87,7 +93,6 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
         main_frame = (FrameLayout) findViewById(R.id.main_frame);
         main_webView = new WebView(mcontext);
         main_webView.setVisibility(View.INVISIBLE);
-        main_webView.requestFocus();
     }
 
     private DeviceInfoBean deviceInfoBean;
@@ -113,22 +118,36 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
-                main_webView.requestFocus();
+//                main_webView.requestFocus();
                 LogUtil.i(TAG, "网页加载中");
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                main_webView.requestFocus();
+//                main_webView.requestFocus();
                 LogUtil.i(TAG, "网页加载结束");
-                new Handler().postDelayed(new Runnable() {
+                Observable.interval(200, TimeUnit.MILLISECONDS).subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<Long>() {
+                    @Override
+                    public void onCompleted() {
+                        unsubscribe();
+                    }
 
                     @Override
-                    public void run() {
+                    public void onError(Throwable e) {
                         main_webView.setVisibility(View.VISIBLE);
+                        unsubscribe();
                     }
-                }, 200);
+
+                    @Override
+                    public void onNext(Long aLong) {
+                        onCompleted();
+                        main_webView.setVisibility(View.VISIBLE);
+                        main_webView.requestFocus();
+                    }
+                });
             }
 
             public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
@@ -181,7 +200,6 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
         float scanH = (float) sh / (float) 720;
         main_webView.setInitialScale((int) (scanW * 100));
         main_frame.addView(main_webView);
-//        setContentView(framelayout);
 //        progressBar = new ProgressBar(mcontext);
 //        FrameLayout.LayoutParams frameParams = new FrameLayout.LayoutParams(
 //                FrameLayout.LayoutParams.WRAP_CONTENT,  FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER); // set size
@@ -192,11 +210,12 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
 
     private String templateUrl = "";
     private int templateType = -1;
-
+    private String downLoadVideo = "";
     private void initAdvert() {
         LogUtil.i(TAG, "initAdvert: ");
         try {
             JSONObject json = AdvertManage.setRequestParams(mcontext, deviceInfoBean);
+            LogUtil.i(TAG, "initAdvert: json:"+json.toString());
             AdvertManage.GetAdvertData(mcontext, json, new AdvertCallBack() {
                 @Override
                 public void onSuccess(UpdateDataBean updateDataBean) {
@@ -206,6 +225,29 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
                     }
                     try {
                         templateType = updateDataBean.getJson().getTemplateTYPE();
+                        downLoadVideo = updateDataBean.getJson().getVideoDownloadUrl();
+                        if (templateType == 10){
+                            Log.i(TAG, "onSuccess: get templateType is 10 ,start init video");
+                            if (TextUtils.isEmpty(videoUrl)){
+                                Log.i(TAG, "onSuccess: get videoUrl is null");
+                                if (mediaPlayer!=null){
+                                    Log.i(TAG, "onSuccess:  mediaPlayer is null");
+                                    if (!mediaPlayer.isPlaying()){
+                                        Log.i(TAG, "onSuccess:  mediaPlayer not play");
+                                        String videoDownloadUrl = updateDataBean.getJson().getVideoDownloadUrl();
+                                        setVideo(videoDownloadUrl);
+                                    }
+                                }else{
+                                    Log.i(TAG, "onSuccess:  mediaPlay not null");
+                                    String videoDownloadUrl = updateDataBean.getJson().getVideoDownloadUrl();
+                                    setVideo(videoDownloadUrl);
+                                }
+                            }
+                        }else{
+                            if (!getVideo){
+                                getVideo();
+                            }
+                        }
                         int imagePlayTime = updateDataBean.getJson().getImagePlayTime();
                         int videoPlayTime = updateDataBean.getJson().getVideoPlayTime();
                         SharedPreferencesUtil.setIntValue(mcontext, "imagePlayTime", imagePlayTime);
@@ -219,11 +261,12 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
                             initCloseTime(updateDataBean.getJson().getVideoPlayTime());
                             if (TextUtils.isEmpty(updateDataBean.getJson().getTemplateUrl())) {
                                 LogUtil.i(TAG, "setData: get templateUrl is null");
+                                main_frame.removeView(main_webView);
                                 return;
                             }
                             templateUrl = updateDataBean.getJson().getTemplateUrl();
                             if(!TextUtils.isEmpty(templateUrl)){
-                                Log.i(TAG, "onSuccess: getTemplateUrl:"+templateUrl);
+                                LogUtil.i(TAG, "onSuccess: getTemplateUrl:"+templateUrl);
                                 String postData = "userName=" + deviceInfoBean.getUsername()+"&userToken="+deviceInfoBean.getUser_token()+"&stb_id="+deviceInfoBean.getStb_id();
                                 main_webView.postUrl(templateUrl, postData.getBytes());
                             }
@@ -395,9 +438,10 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
             e.printStackTrace();
         }
     }
-
+    private boolean getVideo = false;
     private void getVideo() {
         LogUtil.i(TAG, "getVideo: ");
+        getVideo = true;
         Observable.unsafeCreate(new Observable.OnSubscribe<List<String>>() {
             @Override
             public void call(Subscriber<? super List<String>> subscriber) {
@@ -455,7 +499,7 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
                 mediaPlayer = null;
             } else {
                 initMediaPlayer();
-                mediaPlayer.setLooping(true);
+//                mediaPlayer.setLooping(true);
             }
             if (!TextUtils.isEmpty(videoUrl)) {
                 mediaPlayer.setDataSource(mcontext, Uri.parse(videoUrl));
@@ -470,6 +514,10 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
             if (null != mediaPlayer) {
                 mediaPlayer.reset();
                 mediaPlayer = null;
+                if (isFirstError){
+                    isFirstError = false;
+                    setVideo(videoUrl);
+                }
             }
         }
 
@@ -546,14 +594,17 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
         CloseTime = close_time;
 //        int templateTYPE = updateDataBean.getJson().getTemplateTYPE();
         LogUtil.i(TAG, "initCloseTime: tempileId:" + templateType);
-        if (templateType == 1) {
+        if (templateType == 1 || templateType == 10) {
             removeTextView();
             closeTimeText = new TextView(mcontext);
             FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.RIGHT);
             layoutParams.setMargins(0, 10, 10, 0);
             closeTimeText.setLayoutParams(layoutParams);
+            closeTimeText.setPadding(20,10,20,10);
             closeTimeText.setTextSize(DensityUtil.px2sp(mcontext, 28));
-            closeTimeText.setTextColor(Color.parseColor("#FF0000"));
+//            closeTimeText.setTextColor(Color.parseColor("#FF0000"));
+            closeTimeText.setTextColor(Color.parseColor("#FFFFFF"));
+            closeTimeText.setBackgroundColor(Color.parseColor("#40000000"));
             closeTimeText.bringToFront();
             main_frame.addView(closeTimeText);
             LogUtil.i(TAG, "initCloseTime: addTextView");
@@ -590,7 +641,7 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
         countDownTimer = new CountDownTimer(closeTime * 1000, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
-                LogUtil.i(TAG, "onTick: CountDown" + millisUntilFinished / 1000);
+                LogUtil.i(TAG, "onTick: CountDown:" + millisUntilFinished / 1000);
             }
 
             @Override
@@ -677,9 +728,17 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
 
     public void play() {
         if (null != mediaPlayer) {
-            mediaPlayer.start();
-            // 设置显示到屏幕
-            mediaPlayer.setDisplay(surfaceView.getHolder());
+            try{
+                // 设置显示到屏幕
+                mediaPlayer.setDisplay(surfaceView.getHolder());
+                mediaPlayer.start();
+            }catch (IllegalArgumentException e1){
+                e1.printStackTrace();
+            } catch (IllegalStateException e1) {
+                e1.printStackTrace();
+            }catch (Exception e){
+                e.printStackTrace();
+            }
         }
     }
 
@@ -692,40 +751,116 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
         if (null!=mp){
             mp.getDuration();
         }
-        AdvertManage.uploadAdverLog(deviceInfoBean,mcontext,videoUrl);
+        initCloseTime(0);
+        if (TextUtils.isEmpty(downLoadVideo)){
+            AdvertManage.uploadAdverLog(deviceInfoBean,mcontext,videoUrl);
+        }else{
+            AdvertManage.uploadAdverLog(deviceInfoBean,mcontext,videoUrl);
+        }
     }
 
-
-
+/**
+ * MEDIA_ERROR_IO
+ 文件不存在或错误，或网络不可访问错误
+ 值: -1004 (0xfffffc14)
+ MEDIA_ERROR_MALFORMED
+ 流不符合有关标准或文件的编码规范
+ 值: -1007 (0xfffffc11)
+ MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK
+ 视频流及其容器不适用于连续播放视频的指标（例如：MOOV原子）不在文件的开始.
+ 值: 200 (0x000000c8)
+ MEDIA_ERROR_SERVER_DIED
+ 媒体服务器挂掉了。此时，程序必须释放MediaPlayer 对象，并重新new 一个新的。
+ 值: 100 (0x00000064)
+ MEDIA_ERROR_TIMED_OUT
+ 一些操作使用了过长的时间，也就是超时了，通常是超过了3-5秒
+ 值: -110 (0xffffff92)
+ MEDIA_ERROR_UNKNOWN
+ 未知错误
+ 值: 1 (0x00000001)
+ MEDIA_ERROR_UNSUPPORTED
+ 比特流符合相关编码标准或文件的规格，但媒体框架不支持此功能
+ 值: -1010 (0xfffffc0e)
+ what int: 标记的错误类型:
+ MEDIA_ERROR_UNKNOWN
+ MEDIA_ERROR_SERVER_DIED
+ extra int: 标记的错误类型.
+ MEDIA_ERROR_IO
+ MEDIA_ERROR_MALFORMED
+ MEDIA_ERROR_UNSUPPORTED
+ MEDIA_ERROR_TIMED_OUT
+ MEDIA_ERROR_SYSTEM (-2147483648) - low-level system error.
+ * */
+    private boolean isFirstError = true;
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
-        LogUtil.i(TAG, "onError: ");
+        LogUtil.i(TAG, "MediaPlayer onError: "+what);
+        switch (what){
+            case MediaPlayer.MEDIA_ERROR_IO:
+                LogUtil.e(TAG,"文件不存在或错误，或网络不可访问错误");
+                break;
+            case MediaPlayer.MEDIA_ERROR_MALFORMED:
+                LogUtil.e(TAG,"流不符合有关标准或文件的编码规范");
+                break;
+            case MediaPlayer.MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK:
+                LogUtil.e(TAG,"视频流及其容器不适用于连续播放视频的指标（例如：MOOV原子）不在文件的开始.");
+                break;
+            case MediaPlayer.MEDIA_ERROR_SERVER_DIED:
+                LogUtil.e(TAG,"媒体服务器挂掉了");
+                break;
+            case MediaPlayer.MEDIA_ERROR_TIMED_OUT:
+                LogUtil.e(TAG,"超时");
+                break;
+            case MediaPlayer.MEDIA_ERROR_UNKNOWN:
+                LogUtil.e(TAG,"未知错误");
+                break;
+            case MediaPlayer.MEDIA_ERROR_UNSUPPORTED:
+                LogUtil.e(TAG,"比特流符合相关编码标准或文件的规格，但媒体框架不支持此功能");
+                break;
+            default:
+                LogUtil.e(TAG,"未知的异常:"+what);
+                break;
+        }
         if (null != mediaPlayer) {
             mediaPlayer.reset();
         }
         currentP = 0;
+        if (isFirstError){
+            isFirstError = false;
+            setVideo(videoUrl);
+        }
         return false;
+
+
     }
 
     @Override
     public void onPrepared(MediaPlayer mp) {
         LogUtil.i(TAG, "onPrepared isPlayPause:" + isPlayPause + "|" + currentP);
-        mediaPlayer.setDisplay(surfaceView.getHolder());
-        mediaPlayer.start();
-        // 播放视频
-        if (isPlayFromStart) {
-            mediaPlayer.seekTo(0);
-            //马上置为false，因为视频开始播放以后，按home键切出去，再进来的话要从上次播放位置开始
-            isPlayFromStart = false;
-        } else {
-            if (isPlayPause) {
-                if (currentP >= mediaPlayer.getDuration()) {
-                    currentP = 0;
-                }
-                mediaPlayer.seekTo(currentP);
-            } else {
+        try{
+            mediaPlayer.setDisplay(surfaceView.getHolder());
+            mediaPlayer.start();
+            // 播放视频
+            if (isPlayFromStart) {
                 mediaPlayer.seekTo(0);
+                //马上置为false，因为视频开始播放以后，按home键切出去，再进来的话要从上次播放位置开始
+                isPlayFromStart = false;
+            } else {
+                if (isPlayPause) {
+                    if (currentP >= mediaPlayer.getDuration()) {
+                        currentP = 0;
+                    }
+                    mediaPlayer.seekTo(currentP);
+                } else {
+                    mediaPlayer.seekTo(0);
+                }
             }
+        }catch (IllegalArgumentException e1){
+            e1.printStackTrace();
+        }catch (IllegalStateException e1) {
+            e1.printStackTrace();
+        }catch (Exception e){
+            e.printStackTrace();
         }
     }
 
@@ -753,7 +888,9 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
             startPlay = false;
             return;
         }
-        setNextVideo(videoUrl);
+        if (!TextUtils.isEmpty(videoUrl)){
+            setNextVideo(videoUrl);
+        }
     }
 
     @Override

@@ -5,8 +5,10 @@ package com.vunke.chinaunicom.advertisement.manager;
  */
 public class URL_Manager {
     public static final String BASE_URL = "http://119.39.118.163:8082/";//正式地址
-//    public static final String BASE_URL = "http://118.39.118.163:8082/";//测试地址
+//    public static final String BASE_URL = "http://iptvad.hn165.com:8082/";//正式外网地址
+//    public static final String BASE_URL = "http://10.16.16.53:8082/";//正式外网地址
 //    public static final String BASE_URL = "http://119.39.118.162:8082/";//测试地址
+//    public static final String BASE_URL = "http://192.168.0.103:8085//";//测试地址
 
 
 
@@ -24,5 +26,7 @@ public class URL_Manager {
     public static final String ADVERTISEMENT_GROUPSTRATEGY = "Advertise/GroupStrategy.do";//正式
 
     public static final String ADVERTISEMENT_UPLOADLOG_URL = "Advertise/adpush_server/uploadLog.do";//正式
+
+    public static final String ADVERTISEMENT_DODNLOADLOG_URL = "Advertise/adpush_server/downloadLog.do";//正式
 //    public static final String ADVERTISEMENT_GROUPSTRATEGY2 = "GroupStrategy/GroupStrategy.txt";//测试
 }

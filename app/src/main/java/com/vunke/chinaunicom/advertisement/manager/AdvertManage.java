@@ -19,6 +19,10 @@ import com.vunke.chinaunicom.advertisement.utils.Utils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.concurrent.TimeUnit;
+
+import okhttp3.OkHttpClient;
+
 /**
  * Created by zhuxi on 2018/2/5.
  */
@@ -29,13 +33,16 @@ public class AdvertManage {
         JSONObject json = new JSONObject();
         try {
             json.put("userName",deviceInfoBean.getUsername())
+//                    .put("userName","073108962949A@tv")
                     .put("version_code", Utils.getVersionCode(context))
                     .put("version_name",Utils.getVersionName(context))
-                    .put("Area_id",deviceInfoBean.getArea_id())
                     .put("stbModle", Build.MODEL)
+                    .put("EPGDomain" ,  deviceInfoBean.getEPGDomain())
                     .put("EPGGroupNMB",deviceInfoBean.getEPGGroupNMB())
+                    .put("Area_id",deviceInfoBean.getArea_id())
                     .put("Group_id",deviceInfoBean.getGroup_id())
                     .put("stb_id",deviceInfoBean.getStb_id());
+            LogUtil.i(TAG, "setRequestParams: json:"+json.toString());
             return json;
         }catch (JSONException e){
             LogUtil.i(TAG, "setRequestParams: onError");
@@ -46,7 +53,9 @@ public class AdvertManage {
 
     public static void GetAdvertData(final Context mcontext,JSONObject json, final AdvertCallBack advertCallBack){
         try {
-            PostRequest<String> postRequest = OkGo.<String>post(URL_Manager.BASE_URL+URL_Manager.ADVERTISEMENT_IPTVSTRATEGY_URL).tag(TAG).retryCount(0);
+            OkHttpClient ok = new OkHttpClient();
+            ok.newBuilder().connectTimeout(10, TimeUnit.SECONDS);
+            PostRequest<String> postRequest = OkGo.<String>post(URL_Manager.BASE_URL+URL_Manager.ADVERTISEMENT_IPTVSTRATEGY_URL).tag(TAG).retryCount(1).client(ok);
             postRequest.params("json", json.toString());
             postRequest.execute(new StringCallback() {
                 @Override
@@ -71,10 +80,13 @@ public class AdvertManage {
                             return;
                         }else{
                             LogUtil.i(TAG, "onSuccess: get code =200");
-                            DownloadManager downloadManager = new DownloadManager(mcontext);
-                            downloadManager.GetUpdateData(mcontext,updateDataBean);
                             int templateTYPE = updateDataBean.getJson().getTemplateTYPE();
                             LogUtil.i(TAG, "initAdvert onSuccess: templateTYPE:"+templateTYPE);
+                            if (templateTYPE!=10){
+                                SharedPreferencesUtil.setBooleanValue(mcontext, "isVideoStream", false);
+                                DownloadManager downloadManager = new DownloadManager(mcontext);
+                                downloadManager.GetUpdateData(mcontext,updateDataBean);
+                            }
                             switch (templateTYPE){
                                 case 1:
                                     int imagePlayTime = updateDataBean.getJson().getImagePlayTime();
@@ -88,6 +100,11 @@ public class AdvertManage {
                                         LogUtil.i(TAG, "StartAdvert: 播放图片 imagePlayTime:"+imagePlayTime);
                                     }
                                    advertCallBack.onSuccess(updateDataBean);
+                                    break;
+                                case 10:
+                                    LogUtil.i(TAG, "onSuccess: get tempType is 10 ,next time play video");
+                                    SharedPreferencesUtil.setBooleanValue(mcontext, "isVideoStream", true);
+                                    advertCallBack.onSuccess(updateDataBean);
                                     break;
                                 case 99:
                                 default:
